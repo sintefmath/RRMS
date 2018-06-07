@@ -1,6 +1,6 @@
 %%% Copyright 2018 Equinor ASA
 
-function [G, pressure, pressure_averaged, velocity, speed, permeability] = readVTK(filename)
+function [G, pressure, pressure_averaged, velocity, speed, permeability, porosity] = readVTK(filename)
 
 %%% 0) header
 file = fopen(filename,'r');
@@ -67,7 +67,12 @@ velocity=velocity.';
 %%% 5) Permeability
 str=readuntil(file, 'SCALARS Permeability');
 str = fgets(file);% reads: LOOKUP_TABLE default
-[permeability,count] = fscanf(file,'%f %f %f', num_cell_entries);
+[permeability,count] = fscanf(file,'%f', num_cell_entries);
+
+%%% 5) Porosity
+str=readuntil(file, 'SCALARS Porosity');
+str = fgets(file);% reads: LOOKUP_TABLE default
+[porosity,count] = fscanf(file,'%f', num_cell_entries);
 
 %octave:1> [p,c]=readVTK('z1tracingtt.vtk');
 %octave:5> plotCellData(G, perm)
