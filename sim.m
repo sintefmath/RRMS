@@ -49,17 +49,21 @@ maxdist=10;
 w_x=0;
 w_y=0;
 
-injectionInx=[];
+productionInx=[];
 for i=1:G.cells.num
     dist = (G.cells.centroids(i,1)-w_x)**2;
     dist+= (G.cells.centroids(i,2)-w_y)**2;
     if (sqrt(dist)<maxdist)
-        injectionInx= [injectionInx; i];
+        productionInx= [productionInx; i];
     end
 end
-W=[];
-WI=ones(length(injectionInx),1);
-W = addWell(W, G, rock, injectionInx, 'Sign', -1, 'Dir', 'z', 'WI', WI , 'Radius', 0.1, 'Comp_i', [0, 1]);
+%WI=ones(length(productionInx),1);
+%W = addWell([], G, rock, productionInx, 'Sign', -1, 'Dir', 'z', 'WI', WI);% , 'Radius', 0.1, 'Comp_i', [0, 1]);
+W = addWell([], G, rock, productionInx, ...
+             'InnerProduct', 'ip_tpf', ...
+            'Type', 'bhp', 'Val', 100.0*barsa, ...
+            'Radius', 0.1, 'Comp_i', [0, 1]);
+
 
 %% vertical injectors (low pressure)
 
@@ -76,7 +80,12 @@ for i=1:G.cells.num
 end
 
 WI=ones(length(injectionInx),1);
-W = addWell(W, G, rock, injectionInx, 'Sign', 1, 'Dir', 'z', 'WI', WI , 'Radius', 0.1, 'Comp_i', [1, 0]);
+%W = addWell(W, G, rock, injectionInx, 'Sign', 1, 'Dir', 'z', 'WI', WI);% , 'Radius', 0.1, 'Comp_i', [1, 0]);
+W = addWell(W, G, rock, injectionInx, ...
+             'InnerProduct', 'ip_tpf', ...
+            'Type', 'bhp' , 'Val', 500.0*barsa, ...
+            'Radius', 0.1, 'Dir', 'z', 'Comp_i', [1, 0]);
+
 
 
 %% Compute transmissibilities and init reservoir
@@ -104,15 +113,24 @@ myview = struct('vw',   [-110,18],  ...  % view angle
                 'cb',   'horiz'     ...  % colorbar location
                 );
 
-
-clf, title('Initial pressure')
-plotCellData(G, convertTo(rSol.pressure(1:G.cells.num), barsa), ...
-    'EdgeColor', 'k', 'EdgeAlpha', 1.);
+figure(1)
+clf
+title('pressure')
+plotCellData(G, rSol.pressure);
 plotWell(G, W, 'height', myview.wh, 'color', 'k');
 colorbar
-%axis tight off, view(myview.vw)
-%set(gca,'dataasp',myview.asp), zoom(myview.zoom), camdolly(.1,.15,0)
-%caxis([300 400]), colorbar(myview.cb), colormap(jet)
+axis tight off, view(myview.vw)
+drawnow
+
+figure(2)
+clf
+title('saturation water')
+%plotCellData(G, convertTo(rSol.pressure(1:G.cells.num), barsa));
+plotCellData(G, rSol.s(:,1));
+plotWell(G, W, 'height', myview.wh, 'color', 'k');
+colorbar
+axis tight off, view(myview.vw)
+drawnow
 
 
 %% Main loop
@@ -120,20 +138,8 @@ colorbar
 % equations. The transport equation is solved using the standard implicit
 % single-point upwind scheme with a simple Newton-Raphson nonlinear solver.
 T      = 12*year();
-dT     = year();
-dTplot = year();
-%pv     = poreVolume(G,rock);
-
-% Prepare plotting of saturations
-%clf
-%plotGrid(G, 'FaceColor', 'none', 'EdgeAlpha', 1.);
-%plotWell(G, W, 'height', myview.wh, 'color', 'k');
-%view(myview.vw), set(gca,'dataasp',myview.asp), zoom(myview.zoom);
-%axis tight off
-%h=colorbar(myview.cb); colormap(flipud(winter)),
-%set(h,'Position',[.13 .07 .77 .05]);
-%camdolly(.05,0,0)
-[hs,ha] = deal([]); caxis([0 1]);
+dT     = 1*year();
+dTplot = 1*year();
 
 % Start the main loop
 t  = 0;  plotNo = 1;
@@ -150,14 +156,33 @@ while t < T,
    t = t + dT;
    if ( t < plotNo*dTplot && t <T), continue, end
 
-   % Plot saturation
-   delete([hs, ha])
-   hs = plotCellData(G, rSol.s(:,1), find(rSol.s(:,1) >= -Inf),'EdgeColor','none');
-   ha = annotation('textbox', [0 0.93 0.32 0.07], ...
-                   'String', ['Water saturation at ', ...
-                              num2str(convertTo(t,year)), ' years'],'FontSize',8);
-   drawnow
-   plotNo = plotNo+1;
+    figure(1)
+    clf
+    title('pressure')
+    plotCellData(G, rSol.pressure);
+    plotWell(G, W, 'height', myview.wh, 'color', 'k');
+    colorbar
+    axis tight off, view(myview.vw)
+    drawnow
+
+    figure(2)
+    clf
+    title('saturation water')
+    %plotCellData(G, convertTo(rSol.pressure(1:G.cells.num), barsa));
+    plotCellData(G, rSol.s(:,1));
+    plotWell(G, W, 'height', myview.wh, 'color', 'k');
+    colorbar
+    axis tight off, view(myview.vw)
+    drawnow
+    %clf, title(strcat('pressure(', num2str(convertTo(t,year)),' years)'))
+    %%plotCellData(G, rSol.pressure);
+    %%plotCellData(G, rSol.s(:,2));
+    %plotCellData(G, rSol.s(:,1), find(rSol.s(:,1) > 0.01))
+    %%plotCellData(G, convertTo(rSol.pressure(1:G.cells.num), barsa));
+    %plotWell(G, W, 'height', myview.wh, 'color', 'k');
+    %colorbar
+    %axis tight off, view(myview.vw)
+    %drawnow
 
 end
 %%
