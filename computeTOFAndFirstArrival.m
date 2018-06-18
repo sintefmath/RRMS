@@ -1,3 +1,5 @@
+%%% Copyright 2018 Equinor ASA
+
 function [T, A, q] = computeTOFAndFirstArrival(state, G, rock, varargin)
 %Compute time of flight using finite-volume scheme.
 %

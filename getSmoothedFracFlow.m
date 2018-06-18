@@ -1,3 +1,5 @@
+%%% Copyright 2018 Equinor ASA
+
 function varargout = getSmoothedFracFlow(model, p0, ph, ix)
 if nargin < 3
     ph = 'W';

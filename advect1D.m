@@ -1,5 +1,7 @@
+%%% Copyright 2018 Equinor ASA
+
 function [s, wcut, t] = advect1D(s0, x, model, T, varargin)
-opt = struct('src', 1, 'tstep' , T/500, 'tol', 1e-5, 'p0', 300*barsa, 'qp', []);
+opt = struct('src', 1, 'tstep' , T/1000, 'tol', 1e-5, 'p0', 300*barsa, 'qp', []);
 opt = merge_options(opt, varargin{:});
 % 1d advection (e.g., along tof) for flux function f from t=1 to T
 
