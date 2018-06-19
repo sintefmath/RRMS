@@ -53,8 +53,10 @@ t_sim    = report.ReservoirTime;
 
 nx = numel(bin_centers);
 finalT=20*year;
-[s, wcut_tof, t] = advect1D(zeros(nx,1), bin_edges, model, finalT, 'qp', binflux_tof, 'tstep', finalT/tstep);
-[s, wcut_fa, t] = advect1D(zeros(nx,1), bin_edges, model, finalT, 'qp', binflux_fa, 'tstep', finalT/tstep);
+[s_tof_exp, wcut_tof_exp, t_tof_exp] = advect1D_exp(zeros(nx,1), bin_edges, model, finalT, 'qp', binflux_tof, 'tstep', finalT/tstep);
+[s_fa_exp, wcut_fa_exp, t_fa_exp] = advect1D_exp(zeros(nx,1), bin_edges, model, finalT, 'qp', binflux_fa, 'tstep', finalT/tstep);
+[s_tof_imp, wcut_tof_imp, t_tof_imp] = advect1D_imp(zeros(nx,1), bin_edges, model, finalT, 'qp', binflux_tof, 'tstep', finalT/tstep);
+[s_fa_imp, wcut_fa_imp, t_fa_imp] = advect1D_imp(zeros(nx,1), bin_edges, model, finalT, 'qp', binflux_fa, 'tstep', finalT/tstep);
 
 
 figure(2)
@@ -63,8 +65,10 @@ if (plotref)
     plot(t_sim/year, wcut_sim,'DisplayName','simulation')
 end
 hold on;
-plot(t/year, wcut_tof, '--', 'DisplayName', strcat('tof, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
-plot(t/year, wcut_fa, ':', 'DisplayName', strcat('fa, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
+plot(t_tof_exp/year, wcut_tof_exp, '--', 'DisplayName', strcat('tof exp, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
+plot(t_fa_exp/year, wcut_fa_exp, ':', 'DisplayName', strcat('fa exp, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
+plot(t_tof_imp/year, wcut_tof_imp, '-.', 'DisplayName', strcat('tof imp, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
+plot(t_fa_imp/year, wcut_fa_imp, ':', 'DisplayName', strcat('fa imp, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
 
 axis([0 20 0 1])
 legend;

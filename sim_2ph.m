@@ -1,6 +1,6 @@
 %%% Copyright 2018 Equinor ASA
 
-function [W, wellSols, states, report] = sim_2ph(model, W, viscosities, relperms)
+function [wellSols, states, report] = sim_2ph(model, W, viscosities, relperms)
 
 mrstModule add ad-core ad-blackoil agmg ad-fi ad-props linearsolvers
 
