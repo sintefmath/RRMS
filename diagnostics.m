@@ -26,6 +26,9 @@ bin_centers = .5*(bin_edges(1:end-1)+bin_edges(2:end));
 flux_tof = pv./ttof;
 flux_fa  = pv./tfa;
 
+fluxdist = computeDistribution(model, states{solnr}, W, bin_edges);
+binflux_pu = fluxdist*(bin_edges(2)-bin_edges(1));
+
 binflux_tof = accumarray(bin_tof(bin_tof>0), flux_tof(bin_tof>0))/fac_tof;
 binflux_fa = accumarray(bin_fa(bin_fa>0), flux_fa(bin_fa>0))/fac_fa;
 % plot tof-distribution
@@ -36,6 +39,7 @@ if (plotref)
 end
 stairs(bin_centers/year, binflux_tof, 'DisplayName', strcat('tof, binsize=', num2str(binsize),' solnr=', num2str(solnr)));
 stairs(bin_centers/year, binflux_fa, 'DisplayName', strcat('fa, binsize=', num2str(binsize),' solnr=', num2str(solnr)));
+stairs(bin_centers/year, binflux_pu, 'DisplayName', strcat('pu, binsize=', num2str(binsize),' solnr=', num2str(solnr)));
 legend;
 
 %%
@@ -55,8 +59,10 @@ nx = numel(bin_centers);
 finalT=20*year;
 [s_tof_exp, wcut_tof_exp, t_tof_exp] = advect1D_exp(zeros(nx,1), bin_edges, model, finalT, 'qp', binflux_tof, 'tstep', finalT/tstep);
 [s_fa_exp, wcut_fa_exp, t_fa_exp] = advect1D_exp(zeros(nx,1), bin_edges, model, finalT, 'qp', binflux_fa, 'tstep', finalT/tstep);
+[s_pu_exp, wcut_pu_exp, t_pu_exp] = advect1D_exp(zeros(nx,1), bin_edges, model, finalT, 'qp', binflux_pu, 'tstep', finalT/tstep);
 [s_tof_imp, wcut_tof_imp, t_tof_imp] = advect1D_imp(zeros(nx,1), bin_edges, model, finalT, 'qp', binflux_tof, 'tstep', finalT/tstep);
 [s_fa_imp, wcut_fa_imp, t_fa_imp] = advect1D_imp(zeros(nx,1), bin_edges, model, finalT, 'qp', binflux_fa, 'tstep', finalT/tstep);
+[s_pu_imp, wcut_pu_imp, t_pu_imp] = advect1D_imp(zeros(nx,1), bin_edges, model, finalT, 'qp', binflux_pu, 'tstep', finalT/tstep);
 
 
 figure(2)
@@ -67,8 +73,10 @@ end
 hold on;
 plot(t_tof_exp/year, wcut_tof_exp, '--', 'DisplayName', strcat('tof exp, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
 plot(t_fa_exp/year, wcut_fa_exp, ':', 'DisplayName', strcat('fa exp, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
+plot(t_pu_exp/year, wcut_pu_exp, ':', 'DisplayName', strcat('pu exp, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
 plot(t_tof_imp/year, wcut_tof_imp, '-.', 'DisplayName', strcat('tof imp, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
 plot(t_fa_imp/year, wcut_fa_imp, ':', 'DisplayName', strcat('fa imp, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
+plot(t_pu_imp/year, wcut_pu_imp, ':', 'DisplayName', strcat('pu imp, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
 
 axis([0 20 0 1])
 legend;
