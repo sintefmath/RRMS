@@ -1,6 +1,7 @@
 %%% Copyright 2018 Equinor ASA
 
-function [G, pressure, pressure_averaged, velocity, speed, permeability, porosity] = readVTK(filename)
+function [G, permeability, porosity] = readVTK(filename)
+%function [G, pressure, pressure_averaged, velocity, speed, permeability, porosity] = readVTK(filename)
 
 %%% 0) header
 file = fopen(filename,'r');
@@ -56,14 +57,15 @@ cells = cells(:,2:end)+1;
 G = tetrahedralGrid(points,cells);
 G = computeGeometry(G);
 
-%%% 3) Pressure
-str=readuntil(file, 'SCALARS Corrected_PressureBar');
-str = fgets(file);% reads: LOOKUP_TABLE default
-[pressure,count] = fscanf(file,'%f', num_points);
-%%% 4) Velocity
-str=readuntil(file, 'VECTORS Velocity');
-[velocity,count] = fscanf(file,'%f', [3, num_cell_entries]);
-velocity=velocity.';
+% %%% 3) Pressure
+% str=readuntil(file, 'SCALARS Corrected_PressureBar');
+% str = fgets(file);% reads: LOOKUP_TABLE default
+% [pressure,count] = fscanf(file,'%f', num_points);
+% %%% 4) Velocity
+% str=readuntil(file, 'VECTORS Velocity');
+% [velocity,count] = fscanf(file,'%f', [3, num_cell_entries]);
+% velocity=velocity.';
+
 %%% 5) Permeability
 str=readuntil(file, 'SCALARS Permeability');
 str = fgets(file);% reads: LOOKUP_TABLE default
@@ -74,19 +76,16 @@ str=readuntil(file, 'SCALARS Porosity');
 str = fgets(file);% reads: LOOKUP_TABLE default
 [porosity,count] = fscanf(file,'%f', num_cell_entries);
 
-%octave:1> [p,c]=readVTK('z1tracingtt.vtk');
-%octave:5> plotCellData(G, perm)
-
-pressure_averaged=zeros(num_cells,1);
-for i = 1:num_cells
-    ind1=cells(i,1);
-    ind2=cells(i,2);
-    ind3=cells(i,3);
-    ind4=cells(i,4);
-    pressure_averaged(i)=(pressure(ind1)+pressure(ind2)+pressure(ind3)+pressure(ind4))/4.;
-end
-
-speed=vecnorm(velocity.').';
+% pressure_averaged=zeros(num_cells,1);
+% for i = 1:num_cells
+%     ind1=cells(i,1);
+%     ind2=cells(i,2);
+%     ind3=cells(i,3);
+%     ind4=cells(i,4);
+%     pressure_averaged(i)=(pressure(ind1)+pressure(ind2)+pressure(ind3)+pressure(ind4))/4.;
+% end
+% 
+% speed=vecnorm(velocity.').';
 
 end
 

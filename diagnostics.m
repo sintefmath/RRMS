@@ -1,16 +1,16 @@
 %%% Copyright 2018 Equinor ASA
 
-function diagnostics(G, rock, W, wellSols, states, report, model, solnr, binsize, tstep, plotref)
+function diagnostics(wellSols, states, report, model, W, solnr, binsize, tstep, plotref)
 
-mrstModule add ad-core ad-blackoil deckformat agmg ad-fi ad-props linearsolvers diagnostics mrst-gui
+mrstModule add diagnostics
 
 %% DIAGNOSTICS
-D = computeTOFandTracerFirstArrival(states{solnr}, G, rock, 'wells', W, 'computeWellTOFs', true);
-%D = computeTOFandTracer(states{solnr}, G, rock,  'wells', W);
+D = computeTOFandTracerFirstArrival(states{solnr}, model.G, model.rock, 'wells', W, 'computeWellTOFs', true);
+%D = computeTOFandTracer(states{solnr}, model.G, model.rock,  'wells', W);
 % get approx tof-distribution
 ttof = sum(D.tof,2);
 tfa  = D.ifa + D.pfa;
-pv = poreVolume(G, rock);
+pv = poreVolume(model.G, model.rock);
 
 % adjust ttof to match actual flux
 fac_tof = sum(pv./ttof)./wellSols{solnr}(2).qWs;
@@ -29,8 +29,14 @@ flux_fa  = pv./tfa;
 binflux_tof = accumarray(bin_tof(bin_tof>0), flux_tof(bin_tof>0))/fac_tof;
 binflux_fa = accumarray(bin_fa(bin_fa>0), flux_fa(bin_fa>0))/fac_fa;
 % plot tof-distribution
-figure(1), hold on
-stairs(bin_centers/year, [binflux_tof, binflux_fa]);
+figure(1)
+if (plotref)
+    clf;
+    hold on;
+end
+stairs(bin_centers/year, binflux_tof, 'DisplayName', strcat('tof, binsize=', num2str(binsize),' solnr=', num2str(solnr)));
+stairs(bin_centers/year, binflux_fa, 'DisplayName', strcat('fa, binsize=', num2str(binsize),' solnr=', num2str(solnr)));
+legend;
 
 %%
 % minimum swat = .2 and maximum swat = .8, so effective porevolume is .6*pv
@@ -51,12 +57,14 @@ finalT=20*year;
 [s, wcut_fa, t] = advect1D(zeros(nx,1), bin_edges, model, finalT, 'qp', binflux_fa, 'tstep', finalT/tstep);
 
 
-figure(2), hold on
+figure(2)
 if (plotref)
+    clf;
     plot(t_sim/year, wcut_sim,'DisplayName','simulation')
 end
-plot(t/year, wcut_tof, 'DisplayName', strcat('tof, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
-plot(t/year, wcut_fa, 'DisplayName', strcat('fa, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
+hold on;
+plot(t/year, wcut_tof, '--', 'DisplayName', strcat('tof, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
+plot(t/year, wcut_fa, ':', 'DisplayName', strcat('fa, binsize=', num2str(binsize),' solnr=', num2str(solnr)))
 
 axis([0 20 0 1])
 legend;
