@@ -19,18 +19,24 @@ st.PARSEDCELLS = [];
 
 while true
     
-    %%% stopping criterion, boundary
-    if min(G.faces.neighbors(faceID,:)) == 0
-        break;
-    end
+
     
     %-----------------%
     % 2. compute the velocity in barycentric coordinates
     %[velocity, cellID, facesofcell] = nextCell(G, porosity, faceID, totflux);
     neighbors = G.faces.neighbors(faceID,:);
+%%% stopping criterion, on boundary
+    if min(neighbors) == 0
+        break;
+    end
     cellID = neighbors(1+(totflux(faceID)>=0));%if flux is positive, it flows to cell neighbors(2), otherwise neighbors(1).
     facesofcell = [G.cells.faces(G.cells.facePos(cellID):G.cells.facePos(cellID+1)-1)];
-    velocity = -totflux(facesofcell)/(3*G.cells.volumes(cellID)*porosity(cellID));
+    neighborsoffaces = G.faces.neighbors(facesofcell,:);
+    signu(1)=neighborsoffaces(1,1+(totflux(facesofcell(1))>=0))==cellID;
+    signu(2)=neighborsoffaces(2,1+(totflux(facesofcell(2))>=0))==cellID;
+    signu(3)=neighborsoffaces(3,1+(totflux(facesofcell(3))>=0))==cellID;
+    signu(4)=neighborsoffaces(4,1+(totflux(facesofcell(4))>=0))==cellID;
+    velocity = -totflux(facesofcell).*(2*signu'-1)/(3*G.cells.volumes(cellID)*porosity(cellID));
     
     %-----------------%
     % 1. find the barycentric coordinates of x_0 = x(tau_0) of the entry
