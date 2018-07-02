@@ -2,7 +2,7 @@
 
 %viscosities=[1 10]
 %relperms=[2 2]
-function main(viscosities, relperms, vtkfile)
+function [G, porosity, states] = main(viscosities, relperms, vtkfile)
 
 cd /home/franzf/Downloads/checkout-mrst/mrst-bitbucket/mrst-core/
 startup
@@ -34,6 +34,6 @@ else
     load(filename_sim, 'wellSols', 'states', 'report');
 end
 
-diagnostics(wellSols, states, report, model, W, 1,0.05,1000,true)
+%diagnostics(wellSols, states, report, model, W, 1,0.05,1000,true)
 %diagnostics(wellSols, states, report, model, W, 20,1,1000,false)
 %diagnostics(wellSols, states, report, model, W, 20,0.1,1000,false)
