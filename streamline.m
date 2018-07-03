@@ -1,5 +1,5 @@
 %streamline(G, porosity, states{1}.flux, 124)
-function [X, TOF] = streamline(G, porosity, flux, faceID)
+function st = streamline(G, porosity, flux, faceID)
 totflux = sum(flux,2);
 totflux = flux(:,2);
 assert(length(totflux)==G.faces.num, "We need a flux per face, aborting!");
@@ -16,6 +16,7 @@ st.LAMBDA = [];
 st.X = [];
 st.TOF = [];
 st.PARSEDCELLS = [];
+st.PARSEDFACES = [];
 
 while true
     
@@ -32,10 +33,14 @@ while true
     cellID = neighbors(1+(totflux(faceID)>=0));%if flux is positive, it flows to cell neighbors(2), otherwise neighbors(1).
     facesofcell = [G.cells.faces(G.cells.facePos(cellID):G.cells.facePos(cellID+1)-1)];
     neighborsoffaces = G.faces.neighbors(facesofcell,:);
-    signu(1)=neighborsoffaces(1,1+(totflux(facesofcell(1))>=0))==cellID;
-    signu(2)=neighborsoffaces(2,1+(totflux(facesofcell(2))>=0))==cellID;
-    signu(3)=neighborsoffaces(3,1+(totflux(facesofcell(3))>=0))==cellID;
-    signu(4)=neighborsoffaces(4,1+(totflux(facesofcell(4))>=0))==cellID;
+%     signu(1)=neighborsoffaces(1,1+(totflux(facesofcell(1))>=0))==cellID;
+%     signu(2)=neighborsoffaces(2,1+(totflux(facesofcell(2))>=0))==cellID;
+%     signu(3)=neighborsoffaces(3,1+(totflux(facesofcell(3))>=0))==cellID;
+%     signu(4)=neighborsoffaces(4,1+(totflux(facesofcell(4))>=0))==cellID;
+    signu(1)=neighborsoffaces(1,1)==cellID;
+    signu(2)=neighborsoffaces(2,1)==cellID;
+    signu(3)=neighborsoffaces(3,1)==cellID;
+    signu(4)=neighborsoffaces(4,1)==cellID;
     velocity = -totflux(facesofcell).*(2*signu'-1)/(3*G.cells.volumes(cellID)*porosity(cellID));
     
     %-----------------%
@@ -47,10 +52,6 @@ while true
     [G.faces.nodes(3*(facesofcell(3)-1)+1:3*facesofcell(3),:)];
     [G.faces.nodes(3*(facesofcell(4)-1)+1:3*facesofcell(4),:)];
     ]);
-    %a = G.nodes.coords(nodesofcell(1),:);
-    %b = G.nodes.coords(nodesofcell(2),:);
-    %c = G.nodes.coords(nodesofcell(3),:);
-    %d = G.nodes.coords(nodesofcell(4),:);
     A = G.nodes.coords(nodesofcell(:),:);
     
     %TODO: sort such that faces are on opposite sides of missing node
@@ -68,19 +69,13 @@ while true
     d=A(indd,:);
     lambda = ToBarycentric(a,b,c,d, x);
     
-    st.LAMBDA(:,end+1) = lambda;
-    planenumind=find(lambda<1e-10);
-    st.X(:,end+1) = x;
-    st.TOF(end+1) = tau;
-    st.PARSEDCELLS(end+1) = cellID;
-
     %-----------------%
     % 3.a for all i such taht v_i<0, compute the intersection times
     % tau_i = - x_i(tau_0)/v_i
     taunew = -lambda./velocity;
     % For all other i set tau_i = -Inf
     taunew(velocity>=0) = -Inf;
-    taunew(planenumind) = -Inf;
+    taunew(find(lambda<1e-10)) = -Inf;
 
     %-----------------%
     % 3.b find minimum non-negative intersection time tau_m
@@ -95,12 +90,18 @@ while true
     if length(indices)==0
         break;
     end
-
+    
+    st.LAMBDA(:,end+1) = lambda;
+    st.X(:,end+1) = x;
+    st.TOF(end+1) = tau;
+    st.PARSEDCELLS(end+1) = cellID;
+    st.PARSEDFACES(end+1) = faceID;
+    
     %-----------------%
     % 3.c the exit point is given in barycentric coordinates wrt the cell by
     % x(tau_m) = x_0 +tau_m*v
     tau = tau + taunew;
-    faceID = facesofcell(indices)
+    faceID = facesofcell(indices);
     lambda = lambda + taunew*velocity;
     x = FromBarycentric(a,b,c,d, lambda);
 
