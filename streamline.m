@@ -1,7 +1,5 @@
-%streamline(G, porosity, states{1}.flux, 124)
-function st = streamline(G, porosity, flux, faceID)
+function st = streamline(G, porosity, flux, faceID, stopcellID, maxTof)
 totflux = sum(flux,2);
-totflux = flux(:,2);
 assert(length(totflux)==G.faces.num, "We need a flux per face, aborting!");
 
 %start at the middle of the face
@@ -26,22 +24,25 @@ while true
     % 2. compute the velocity in barycentric coordinates
     %[velocity, cellID, facesofcell] = nextCell(G, porosity, faceID, totflux);
     neighbors = G.faces.neighbors(faceID,:);
-%%% stopping criterion, on boundary
+    cellID = neighbors(1+(totflux(faceID)>=0));%if flux is positive, it flows to cell neighbors(2), otherwise neighbors(1).
+    %%% stopping criterion, on boundary or marked cell or max tof
     if min(neighbors) == 0
         break;
     end
-    cellID = neighbors(1+(totflux(faceID)>=0));%if flux is positive, it flows to cell neighbors(2), otherwise neighbors(1).
+    if ismember(cellID,stopcellID)
+        break;
+    end
+    if tau>=maxTof
+        break;
+    end
     facesofcell = [G.cells.faces(G.cells.facePos(cellID):G.cells.facePos(cellID+1)-1)];
     neighborsoffaces = G.faces.neighbors(facesofcell,:);
 %     signu(1)=neighborsoffaces(1,1+(totflux(facesofcell(1))>=0))==cellID;
 %     signu(2)=neighborsoffaces(2,1+(totflux(facesofcell(2))>=0))==cellID;
 %     signu(3)=neighborsoffaces(3,1+(totflux(facesofcell(3))>=0))==cellID;
 %     signu(4)=neighborsoffaces(4,1+(totflux(facesofcell(4))>=0))==cellID;
-    signu(1)=neighborsoffaces(1,1)==cellID;
-    signu(2)=neighborsoffaces(2,1)==cellID;
-    signu(3)=neighborsoffaces(3,1)==cellID;
-    signu(4)=neighborsoffaces(4,1)==cellID;
-    velocity = -totflux(facesofcell).*(2*signu'-1)/(3*G.cells.volumes(cellID)*porosity(cellID));
+    signu=neighborsoffaces(:,1)==cellID;
+    velocity = -totflux(facesofcell).*(2*signu-1)/(3*G.cells.volumes(cellID)*porosity(cellID));
     
     %-----------------%
     % 1. find the barycentric coordinates of x_0 = x(tau_0) of the entry
@@ -75,7 +76,7 @@ while true
     taunew = -lambda./velocity;
     % For all other i set tau_i = -Inf
     taunew(velocity>=0) = -Inf;
-    taunew(find(lambda<1e-10)) = -Inf;
+    %taunew(find(lambda<1e-10)) = -Inf;
 
     %-----------------%
     % 3.b find minimum non-negative intersection time tau_m

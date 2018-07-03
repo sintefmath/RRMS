@@ -17,7 +17,7 @@ for i=1:model.G.cells.num
     dist = (model.G.cells.centroids(i,1)-w_x).^2;
     dist = dist + (model.G.cells.centroids(i,2)-w_y).^2;
     if (sqrt(dist)<maxdist)
-        productionInx= [productionInx; i];
+        productionInx(end+1) = i;
     end
 end
 %WI=ones(length(productionInx),1);
@@ -38,7 +38,7 @@ for i=1:model.G.cells.num
     dist = (model.G.cells.centroids(i,1)-w_x).^2;
     dist = dist + (model.G.cells.centroids(i,2)-w_y).^2;
     if (sqrt(dist)<maxdist)
-        injectionInx= [injectionInx; i];
+        injectionInx(end+1) = i;
     end
 end
 
