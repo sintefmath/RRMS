@@ -34,6 +34,6 @@ else
     load(filename_sim, 'wellSols', 'states', 'report');
 end
 
-%diagnostics(wellSols, states, report, model, W, 1,0.05,1000,true)
+diagnostics(wellSols, states, report, model, W, 1,0.05,1000,true,100)
 %diagnostics(wellSols, states, report, model, W, 20,1,1000,false)
 %diagnostics(wellSols, states, report, model, W, 20,0.1,1000,false)
