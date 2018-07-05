@@ -13,7 +13,8 @@ function diagnostics(wellSols, states, report, model, W, solnr, binsize, tstep, 
             neighbors = model.G.faces.neighbors(facesofcell(j),:);
             %disp(strcat(int2str(i)," ", int2str(j), ": ", num2str(min(neighbors)), ", ", num2str(max(ismember(neighbors,injectioncellIDs)))));
             %disp(strcat(int2str(i)," ", int2str(j), ": "));%, num2str(max(ismember(neighbors,injectioncellIDs)))));
-            if ~(min(neighbors) == 0 && max(ismember(neighbors,injectioncellIDs)) == 1)
+            %if ~(min(neighbors) == 0 && max(ismember(neighbors,injectioncellIDs)) == 1)
+            if ~(min(neighbors) == 0 || ismember(neighbors(find(neighbors~=injectioncellIDs(i))),injectioncellIDs) )
                 startfaces(end+1)=facesofcell(j);
             end
         end
@@ -26,7 +27,7 @@ function diagnostics(wellSols, states, report, model, W, solnr, binsize, tstep, 
     startflux=[];
     
     for i=1:length(startfaces)
-        numseeds = max(1,maxnumstreamsperface*totfluxstartfaces(i)/max_totfluxstartfaces);
+        numseeds = max(1,ceil(maxnumstreamsperface*totfluxstartfaces(i)/max_totfluxstartfaces));
         neighbors = model.G.faces.neighbors(startfaces(i),:);
         cellID = neighbors(1+(totfluxstartfaces(i)>=0));
         facesofcell = get_faces_of_cell(model.G, cellID);
@@ -34,23 +35,24 @@ function diagnostics(wellSols, states, report, model, W, solnr, binsize, tstep, 
         nodesofface = get_nodes_of_face(model.G, startfaces(i));
         
         abc=model.G.nodes.coords(nodesofcell(ismember(nodesofcell,nodesofface)),:);
-
+        f=waitbar(i/length(startfaces),strcat('processing face ',num2str(i), '/', num2str(length(startfaces)), ' with ', num2str(numseeds), ' seeds.'));
         for j=1:numseeds
             r1=rand;
             r2=rand;
             x=(1-sqrt(r1))*abc(1,:)+sqrt(r1)*(1-r2)*abc(2,:)+sqrt(r1)*r2*abc(3,:);
-            st=streamline(model.G, model.rock.poro, states{1}.flux, x, startfaces(i), wellcellIDs, 1000*year );
-            tmp = size(st.X);
-            if (tmp(2)>2)
+            st=streamline(model.G, model.rock.poro, states{1}.flux, x, startfaces(i), productioncellIDs, 1000*year );
+            if (~isempty(st.X) || length(st.X(1,:))>2 || st.breakreason ~= 'ok' )
                 %plotstreamline(model.G,st, false);
                 endtof(end+1)=st.TOF(end);
                 startflux(end+1)=abs(totfluxstartfaces(i))/numseeds;
             else
-                disp('warning!')
+                disp(strcat('streamline discarded because: ', st.breakreason))
             end
         end
+        close(f);
     end
-
+    
+    
     mrstModule add diagnostics
 
     %% DIAGNOSTICS
@@ -80,6 +82,10 @@ function diagnostics(wellSols, states, report, model, W, solnr, binsize, tstep, 
 
     binflux_tof = accumarray(bin_tof(bin_tof>0), flux_tof(bin_tof>0))/fac_tof;
     binflux_fa = accumarray(bin_fa(bin_fa>0), flux_fa(bin_fa>0))/fac_fa;
+    
+    
+    binflux_streamline=fluxdistribution(endtof, startflux, bin_edges);
+    
     % plot tof-distribution
     figure(1)
     if (plotref)
@@ -89,6 +95,7 @@ function diagnostics(wellSols, states, report, model, W, solnr, binsize, tstep, 
     stairs(bin_centers/year, binflux_tof, 'DisplayName', strcat('tof, binsize=', num2str(binsize),' solnr=', num2str(solnr)));
     stairs(bin_centers/year, binflux_fa, 'DisplayName', strcat('fa, binsize=', num2str(binsize),' solnr=', num2str(solnr)));
     stairs(bin_centers/year, binflux_pu, 'DisplayName', strcat('pu, binsize=', num2str(binsize),' solnr=', num2str(solnr)));
+    stairs(bin_centers/year, binflux_streamline.f, 'DisplayName', strcat('st, binsize=', num2str(binsize),' solnr=', num2str(solnr)));
     legend;
 
     %%

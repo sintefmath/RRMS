@@ -14,6 +14,7 @@ function st = streamline(G, porosity, flux, x, faceID, stopcellID, maxTof)
     st.TOF = [];
     st.PARSEDCELLS = [];
     st.PARSEDFACES = [];
+    st.breakreason = 'ok';
 
     while true
 
@@ -25,20 +26,19 @@ function st = streamline(G, porosity, flux, x, faceID, stopcellID, maxTof)
         cellID = neighbors(1+(totflux(faceID)>=0));%if flux is positive, it flows to cell neighbors(2), otherwise neighbors(1).
         %%% stopping criterion, on boundary or marked cell or max tof
         if min(neighbors) == 0
+            st.breakreason='boundary cell';
             break;
         end
         if ismember(cellID,stopcellID)
+            st.breakreason='well cell';
             break;
         end
         if tau>=maxTof
+            st.breakreason='max time reached';
             break;
         end
         facesofcell = get_faces_of_cell(G, cellID);
         neighborsoffaces = G.faces.neighbors(facesofcell,:);
-    %     signu(1)=neighborsoffaces(1,1+(totflux(facesofcell(1))>=0))==cellID;
-    %     signu(2)=neighborsoffaces(2,1+(totflux(facesofcell(2))>=0))==cellID;
-    %     signu(3)=neighborsoffaces(3,1+(totflux(facesofcell(3))>=0))==cellID;
-    %     signu(4)=neighborsoffaces(4,1+(totflux(facesofcell(4))>=0))==cellID;
         signu=neighborsoffaces(:,1)==cellID;
         velocity = -totflux(facesofcell).*(2*signu-1)/(3*G.cells.volumes(cellID)*porosity(cellID));
 
@@ -77,10 +77,11 @@ function st = streamline(G, porosity, flux, x, faceID, stopcellID, maxTof)
         indices = validentries(ind);
         %TODO: treat multiple indices
         if length(indices)>1
-            a=1;
-            facesofcell(indices)
+            st.breakreason='multiple indices found';
+            break;
         end
         if length(indices)==0
+            st.breakreason='no index found';
             break;
         end
 
