@@ -4,8 +4,10 @@
 %relperms=[2 2]
 function [G, porosity, states] = main(viscosities, relperms, vtkfile)
 
+
 cd /home/franzf/Downloads/checkout-mrst/mrst-bitbucket/mrst-core/
 startup
+mrstPath('register', 'agmg','/home/franzf/git_repos/agmg/')
 cd /home/franzf/git_repos/RRMS/
 
 
@@ -27,6 +29,10 @@ model = TwoPhaseOilWaterModel(G, rock, fluid);
 W = setupWells(model);
 
 filename_sim=strcat('sim_2ph_', num2str(relperms(1)), '_', num2str(relperms(2)), '_visc_', num2str(viscosities(1)), '_', num2str(viscosities(2)), '_sim.mat');
+    
+[wellSols, states, report] = sim_2ph(model, W, viscosities, relperms);
+[wellSols, states, report] = sim_2ph_steps(model, W, viscosities, relperms);
+    
 if exist(filename_sim, 'file') ~= 2
     [wellSols, states, report] = sim_2ph(model, W, viscosities, relperms);
     save(filename_sim, 'wellSols', 'states', 'report');

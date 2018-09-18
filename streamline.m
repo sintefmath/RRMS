@@ -40,7 +40,6 @@ function st = streamline(G, porosity, flux, x, faceID, stopcellID, maxTof)
         facesofcell = get_faces_of_cell(G, cellID);
         neighborsoffaces = G.faces.neighbors(facesofcell,:);
         signu=neighborsoffaces(:,1)==cellID;
-        velocity = -totflux(facesofcell).*(2*signu-1)/(3*G.cells.volumes(cellID)*porosity(cellID));
 
         %-----------------%
         % 1. find the barycentric coordinates of x_0 = x(tau_0) of the entry
@@ -78,10 +77,12 @@ function st = streamline(G, porosity, flux, x, faceID, stopcellID, maxTof)
         %TODO: treat multiple indices
         if length(indices)>1
             st.breakreason='multiple indices found';
+            disp(st.breakreason);
             break;
         end
         if length(indices)==0
             st.breakreason='no index found';
+            disp(st.breakreason);
             break;
         end
 
