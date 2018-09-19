@@ -1,6 +1,6 @@
 %%% Copyright 2018 Equinor ASA
 
-function [wellSols, states, report] = sim_2ph(model, W, viscosities, relperms, transportstepsperpressuresolv)
+function [PwellSols] = sim_2ph_steps(model, W, viscosities, relperms, totalsteps, transportstepsperpressuresolv)
 
 mrstModule add ad-core ad-blackoil agmg ad-fi ad-props linearsolvers
 mrstModule add incomp
@@ -15,8 +15,8 @@ mrstVerbose true
 % * densities: [rho_w, rho_o] = [1000 700] kg/m^3
 % * viscosities: [mu_w, mu_o] = [1 10] cP.
 fluid = initSimpleFluid('mu' , viscosities .* centi*poise     , ...
-                        'rho', [1000, 1000] .* kilogram/meter^3, ...
-                        'n'  , relperms);
+    'rho', [1000, 1000] .* kilogram/meter^3, ...
+    'n'  , relperms);
 
 %%
 %model.AutoDiffBackend = DiagonalAutoDiffBackend();
@@ -26,7 +26,7 @@ model.FacilityModel = UniformFacilityModel(model);
 model.dsMaxAbs = 0.1;
 model.dpMaxRel = 0.1;
 
-%lsolve = setupAMGCL(model);  
+%lsolve = setupAMGCL(model);
 lsolve = CPRSolverAD('ellipticSolver', AMGCLSolverAD());
 
 nls = NonLinearSolver();
@@ -35,11 +35,13 @@ nls.maxIterations = 12;
 nls.LinearSolver = lsolve;
 nls.useRelaxation = true;
 
-T      = 300*day();
-dT     = T/15;
-dTplot = 100*day();  % plot only every 100th day
-N      = fix(T/dTplot);
 pv     = poreVolume(model.G,model.rock);
+
+T      = sum(pv)/W(2).val;%/year();%300*day();
+dT     = T/totalsteps;
+dTplot = dT*10;
+N      = fix(T/dTplot);
+
 
 %[wellSols, states, report] = simulateScheduleAD(rSol, model, schedule, 'NonLinearSolver', nls);
 %rSol = initState(G, W, 0, [0, 1]);
@@ -52,19 +54,20 @@ gravity off
 hT  = computeTrans(model.G, model.rock, 'Verbose', true);
 
 rSol = incompTPFA(rSol, model.G, hT, fluid, 'wells', W);
+PwellSols.pressureSolvs = 1;
 
 % Report initial state of reservoir
 % subplot(2,1,1), cla
 %    plotCellData(model.G, convertTo(rSol.pressure(1:model.G.cells.num), barsa));
 %    title('Initial pressure'), view(3)
-% 
-%subplot(2,1,2), 
-cla
-   cellNo = rldecode(1:model.G.cells.num, diff(model.G.cells.facePos), 2) .';
-   plotCellData(model.G, accumarray(cellNo, ...
-      abs(convertTo(faceFlux2cellFlux(model.G, rSol.flux), meter^3/day))));
-   title('Initial flux intensity'), view(3)
-   drawnow();
+%
+%subplot(2,1,2),
+% cla
+%    cellNo = rldecode(1:model.G.cells.num, diff(model.G.cells.facePos), 2) .';
+%    plotCellData(model.G, accumarray(cellNo, ...
+%       abs(convertTo(faceFlux2cellFlux(model.G, rSol.flux), meter^3/day))));
+%    title('Initial flux intensity'), view(3)
+%    drawnow();
 
 %% Transport loop
 % We solve the two-phase system using a sequential splitting in which the
@@ -87,52 +90,71 @@ cla
 % use internal time steps to obtain a stable discretization. To represent
 % the two solutions, we create new solution objects to be used by the
 % solver with implicit transport step.
-rISol = rSol;
 
 %% Start the main loop
 t  = 0; plotNo = 1; hi = 'Implicit: '; he = 'Explicit: ';
 e = []; pi = []; pe = [];
-pressuresolvs=1;
+transportstep=0;
+
+
+wellSols = convertIncompWellSols(W,rSol, fluid);
+PwellSols.qWs = wellSols{1}(1).qWs;
+PwellSols.qOs = wellSols{1}(1).qOs;
+PwellSols.t = t;
+
+PwellSols.transportSolvs = 1;
+
 while t < T,
-    if (pressuresolvs >= transportstepsperpressuresolv)
-        %   rSol  = explicitTransport(rSol , model.G, dT, model.rock, fluid, 'wells', W);
-        rISol = implicitTransport(rISol, model.G, dT, model.rock, fluid, 'wells', W);
-        pressuresolvs=0;
+    %   rSol  = explicitTransport(rSol , model.G, dT, model.rock, fluid, 'wells', W);
+    rSol = implicitTransport(rSol, model.G, dT, model.rock, fluid, 'wells', W);
+    transportstep = transportstep + 1;
+    PwellSols.transportSolvs = PwellSols.transportSolvs + 1;
+    
+    
+    % Check for inconsistent saturations
+    %   s = [rSol.s(:,1); rISol.s(:,1)];
+    %   assert(max(s) < 1+eps && min(s) > -eps);
+    
+    % Update solution of pressure equation.
+    %   rSol  = incompTPFA(rSol , model.G, hT, fluid, 'wells', W);
+    
+    if (transportstep >= transportstepsperpressuresolv)
+        rSol = incompTPFA(rSol, model.G, hT, fluid, 'wells', W);
+        PwellSols.pressureSolvs = PwellSols.pressureSolvs + 1;
+        transportstep=0;
     end
-
-   % Check for inconsistent saturations
-%   s = [rSol.s(:,1); rISol.s(:,1)];
-%   assert(max(s) < 1+eps && min(s) > -eps);
-
-   % Update solution of pressure equation.
-%   rSol  = incompTPFA(rSol , model.G, hT, fluid, 'wells', W);
-   rISol = incompTPFA(rISol, model.G, hT, fluid, 'wells', W);
-   pressuresolvs = pressuresolvs+1;
-
-%    % Measure water saturation in production cells in saturation
-%    e = [e; sum(abs(rSol.s(:,1) - rISol.s(:,1)).*pv)/sum(pv)]; %#ok
-%    pe = [pe; rSol.s(W(2).cells,1)' ];                 %#ok
-%    pi = [pi; rISol.s(W(2).cells,1)'];                 %#ok
-
-   % Increase time and continue if we do not want to plot saturations
-   t = t + dT;
-   if ( t < plotNo*dTplot && t <T), continue, end
-
-   % Plot saturation
-   heading = [num2str(convertTo(t,day)),  ' days'];
-   r = 0.01;
-%    subplot('position',[(plotNo-1)/N+r, 0.50, 1/N-2*r, 0.48]), cla
-%    plotCellData(model.G, rSol.s(:,1));
-%    view(60,50), axis equal off, title([he heading])
-% 
- %subplot('position',[(plotNo-1)/N+r, 0.02, 1/N-2*r, 0.48]), 
- cla
-   plotCellData(model.G, rISol.s(:,1));
-   %view(60,50), 
-   axis equal off, title([hi heading])
-   drawnow
-
-   plotNo = plotNo+1;
+    
+    %    % Measure water saturation in production cells in saturation
+    %    e = [e; sum(abs(rSol.s(:,1) - rISol.s(:,1)).*pv)/sum(pv)]; %#ok
+    %    pe = [pe; rSol.s(W(2).cells,1)' ];                 %#ok
+    %    pi = [pi; rISol.s(W(2).cells,1)'];                 %#ok
+    
+    
+    % Increase time and continue if we do not want to plot saturations
+    t = t + dT;
+    
+    wellSols = convertIncompWellSols(W,rSol, fluid);
+    PwellSols.qWs = [PwellSols.qWs; wellSols{1}(1).qWs];
+    PwellSols.qOs = [PwellSols.qOs; wellSols{1}(1).qOs];
+    PwellSols.t = [PwellSols.t; t];
+    
+    if ( t < plotNo*dTplot && t <T), continue, end
+    
+    % Plot saturation
+    heading = [num2str(convertTo(t,day)),  ' days'];
+    r = 0.01;
+    %    subplot('position',[(plotNo-1)/N+r, 0.50, 1/N-2*r, 0.48]), cla
+    %    plotCellData(model.G, rSol.s(:,1));
+    %    view(60,50), axis equal off, title([he heading])
+    %
+    %subplot('position',[(plotNo-1)/N+r, 0.02, 1/N-2*r, 0.48]),
+    %  cla
+    %    plotCellData(model.G, rSol.s(:,1));
+    %    %view(60,50),
+    %    axis equal off, title([hi heading])
+    %    drawnow
+    
+    plotNo = plotNo+1;
 end
 
 % %%
