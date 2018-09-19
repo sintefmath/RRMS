@@ -1,6 +1,6 @@
 %%% Copyright 2018 Equinor ASA
 
-function [PwellSols] = sim_2ph_steps(model, W, viscosities, relperms, totalsteps, transportstepsperpressuresolv)
+function [PwellSols] = sim_2ph_steps(model, W, viscosities, relperms, totalsteps)
 
 mrstModule add ad-core ad-blackoil agmg ad-fi ad-props linearsolvers
 mrstModule add incomp
@@ -36,7 +36,10 @@ nls.useRelaxation = true;
 pv = poreVolume(model.G,model.rock);
 T  = sum(pv)/W(2).val;
 
-dT = T/totalsteps;
+count = 0;
+dT = T/(2^totalsteps);
+nextPressuresolve_t = 0;
+
 
 %% Solve initial pressure in reservoir
 gravity off
@@ -48,8 +51,6 @@ PwellSols.pressureSolvs = 1;
 
 %% Start the main loop
 t  = 0;
-transportstep=0;
-
 
 wellSols = convertIncompWellSols(W,rSol, fluid);
 PwellSols.qWs = wellSols{1}(1).qWs;
@@ -61,15 +62,16 @@ PwellSols.transportSolvs = 1;
 while t < T,
     %   rSol  = explicitTransport(rSol , model.G, dT, model.rock, fluid, 'wells', W);
     rSol = implicitTransport(rSol, model.G, dT, model.rock, fluid, 'wells', W);
-    transportstep = transportstep + 1;
     PwellSols.transportSolvs = PwellSols.transportSolvs + 1;
-    
-    if (transportstep >= transportstepsperpressuresolv)
+    disp('transport');
+    if (t>=nextPressuresolve_t)
+        nextPressuresolve_t = nextPressuresolve_t + T/(2^(totalsteps-count));
+        count = count + 1;
         rSol = incompTPFA(rSol, model.G, hT, fluid, 'wells', W);
         PwellSols.pressureSolvs = PwellSols.pressureSolvs + 1;
-        transportstep=0;
+        disp(' --- pressure');
     end
-    
+        
     t = min(t + dT,T);
     
     wellSols = convertIncompWellSols(W,rSol, fluid);
@@ -78,5 +80,5 @@ while t < T,
     PwellSols.t = [PwellSols.t; t];
     
     if ( t <T), continue, end
-
+    
 end
