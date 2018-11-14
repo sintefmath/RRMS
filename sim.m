@@ -1,4 +1,4 @@
-%%% Copyright 2018 Equinor ASA
+%%%Copyright 2018 SINTEF AS
 
 % In this example we will solve an incompressible two-phase oil-water
 % problem, which consists of an elliptic pressure equation

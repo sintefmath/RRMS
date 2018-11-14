@@ -1,3 +1,4 @@
+%%%Copyright 2018 SINTEF AS
 function velocity = getVelocity(G,states, p)
 id = getCellID(G,p)
 velocity = 

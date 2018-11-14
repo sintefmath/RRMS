@@ -1,4 +1,4 @@
-%%% Copyright 2018 Equinor ASA
+%%%Copyright 2018 SINTEF AS
 
 function D = computeTOFandTracerFirstArrival(state, G, rock,  varargin)
 %Compute time-of-flight and tracer distribution using finite-volume scheme.

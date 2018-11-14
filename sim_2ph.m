@@ -1,4 +1,4 @@
-%%% Copyright 2018 Equinor ASA
+%%%Copyright 2018 SINTEF AS
 
 function [wellSols, states, report] = sim_2ph(model, W, viscosities, relperms)
 

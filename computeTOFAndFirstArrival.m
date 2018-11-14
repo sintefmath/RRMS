@@ -1,4 +1,4 @@
-%%% Copyright 2018 Equinor ASA
+%%%Copyright 2018 SINTEF AS
 
 function [T, A, q] = computeTOFAndFirstArrival(state, G, rock, varargin)
 %Compute time of flight using finite-volume scheme.

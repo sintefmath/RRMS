@@ -1,3 +1,4 @@
+%%%Copyright 2018 SINTEF AS
 function bin = fluxdistribution(tof, flux, binedges)
     assert(length(tof)==length(flux));
     bin = struct;

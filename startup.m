@@ -1,3 +1,4 @@
+%%%Copyright 2018 SINTEF AS
 function startup
 %Amend MATLAB PATH to handle MRST implementation.
 

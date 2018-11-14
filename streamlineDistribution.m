@@ -1,3 +1,4 @@
+%%%Copyright 2018 SINTEF AS
 function states = streamlineDistribution(G, porosity, flux, stopCellIDs, maxTof)
 
 parsedfaceIDs=[];

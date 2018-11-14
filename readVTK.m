@@ -1,4 +1,4 @@
-%%% Copyright 2018 Equinor ASA
+%%%Copyright 2018 SINTEF AS
 
 function [G, permeability, porosity] = readVTK(filename)
 %function [G, pressure, pressure_averaged, velocity, speed, permeability, porosity] = readVTK(filename)

@@ -1,3 +1,4 @@
+%%%Copyright 2018 SINTEF AS
 function fluxdist = computeDistribution(model, state, W, bin_edges)
 db = diff(bin_edges(:));
 dt = db(1);

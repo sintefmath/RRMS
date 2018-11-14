@@ -1,3 +1,4 @@
+%%%Copyright 2018 SINTEF AS
 function plotstreamline(G,st, mark)
 plotGrid(G, 'FaceAlpha', 0, 'EdgeAlpha', .1)
 hold on

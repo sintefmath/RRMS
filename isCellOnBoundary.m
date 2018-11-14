@@ -1,3 +1,4 @@
+%%%Copyright 2018 SINTEF AS
 function val = isCellOnBoundary(G,cellID)
 
 val=false;

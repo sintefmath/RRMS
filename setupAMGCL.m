@@ -1,3 +1,4 @@
+%%%Copyright 2018 SINTEF AS
 function lsolve = setupAMGCL(model)
 ncomp = model.water + model.oil + model.gas;
 

@@ -1,3 +1,4 @@
+%%%Copyright 2018 SINTEF AS
 function st = streamline(G, porosity, flux, x, faceID, stopcellID, maxTof)
     totflux = sum(flux,2);
     assert(length(totflux)==G.faces.num, "We need a flux per face, aborting!");

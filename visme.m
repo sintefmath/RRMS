@@ -1,3 +1,4 @@
+%%%Copyright 2018 SINTEF AS
 function visme(a,b,c,d,x)
 xyz=[a' b' c' d']';
 tri=delaunay(xyz);

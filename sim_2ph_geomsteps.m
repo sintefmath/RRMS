@@ -1,4 +1,4 @@
-%%% Copyright 2018 Equinor ASA
+%%%Copyright 2018 SINTEF AS
 
 function [PwellSols] = sim_2ph_steps(model, W, viscosities, relperms, totalsteps)
 

@@ -1,4 +1,4 @@
-%%% Copyright 2018 Equinor ASA
+%%%Copyright 2018 SINTEF AS
 
 function [s, wcut, t] = advect1D(s0, x, model, T, varargin)
 opt = struct('src', 1, 'tstep' , T/1000, 'tol', 1e-5, 'p0', 300*barsa, 'qp', []);

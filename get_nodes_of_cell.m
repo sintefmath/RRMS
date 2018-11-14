@@ -1,3 +1,4 @@
+%%%Copyright 2018 SINTEF AS
 function nodes = get_nodes_of_face(G, facesofcell)
     nodes = unique([
         [G.faces.nodes(3*(facesofcell(1)-1)+1:3*facesofcell(1),:)];
